@@ -6,25 +6,67 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [newTodo, setNewTodo] = useState('');
+  const [adding, setAdding] = useState(false);
+
   useEffect(() => {
-    fetch('http://localhost:8080/api/todos')
-      .then((res) => {
-        if (!res.ok) throw new Error('Something went wrong!');
-        return res.json();
-      })
-      .then((data) => setTodos(data))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, []); 
+    loadTodos();
+  }, []);
 
-  if (loading) return <div>Loading...</div>
-  if (error) return <div>Error: {error}</div>
+  const loadTodos = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('http://localhost:8080/api/todos');
+      const data = await res.json();
+      setTodos(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  console.log("Todos:", todos);
+  const addTodo = async (e) => {
+    e.preventDefault();
+    if (!newTodo.trim()) return;
+
+    try {
+      setAdding(true);
+      await fetch('http://localhost:8080/api/todos', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({title: newTodo, completed: false}),
+      });
+
+      setNewTodo('');
+      loadTodos();
+    } catch (err) {
+      alert('Error adding todo: ' + err.message);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  if (loading) return <div className='container mt-4'>Loading...</div>
+  if (error) return <div className='container mt-4'>Error: {error}</div>
 
   return (
   <div className="container mt-4">
     <h1 className="mb-3">Todo List</h1>
+
+    <form className="mb-4" onSubmit={addTodo}>
+      <div className='input-group'>
+        <input type="text"
+          className='form-control'
+          placeholder='Add new todo...'
+          value={newTodo}
+          onChange={(e) => setNewTodo(e.target.value)}
+          />
+          <button className='btn btn-primary' disabled={adding}>
+            {adding ? 'Adding...' : 'Add'}
+          </button>
+      </div>
+    </form>
 
     <ul className="list-group">
       {todos.map((t) => (
