@@ -47,6 +47,22 @@ function App() {
     }
   };
 
+  const toggleCompleted = async (todo) => {
+    try {
+      await fetch(`http://localhost:8080/api/todos/${todo.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...todo,
+          completed: !todo.completed
+        })
+      });
+      loadTodos();
+    } catch(err) {
+      alert("Error updating todo: " + err.message);
+    }
+  };
+
   if (loading) return <div className='container mt-4'>Loading...</div>
   if (error) return <div className='container mt-4'>Error: {error}</div>
 
@@ -74,8 +90,17 @@ function App() {
           key={t.id} 
           className="list-group-item d-flex justify-content-between align-items-center"
         >
-          {t.title}
-          <span>{t.completed ? "✅" : "⬜"}</span>
+          <div className='form-check'>
+            <input 
+              className='form-check-input'
+              checked={t.completed}
+              type="checkbox"
+              onChange={() => toggleCompleted(t)}
+            />
+          </div>
+          <label className="form-check-label ms-2">
+            {t.title}
+          </label>
         </li>
       ))}
     </ul>
