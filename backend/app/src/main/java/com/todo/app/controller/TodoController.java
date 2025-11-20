@@ -42,4 +42,9 @@ public class TodoController {
             return todoRepository.save(todo);
         }).orElseThrow(() -> new RuntimeException("todo not found"));
     }
+
+    @DeleteMapping("/{id}")
+    public void delete(@PathVariable Long id) {
+        todoRepository.deleteById(id);
+    }
 }
