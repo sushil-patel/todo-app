@@ -17,8 +17,9 @@ function App() {
     try {
       setLoading(true);
       const res = await fetch("http://localhost:8080/api/todos");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setTodos(data);
+      setTodos(data || []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -39,7 +40,7 @@ function App() {
       });
 
       setNewTodo("");
-      loadTodos();
+      await loadTodos();
     } catch (err) {
       alert("Error adding todo: " + err.message);
     } finally {
@@ -57,18 +58,17 @@ function App() {
           completed: !todo.completed,
         }),
       });
-      loadTodos();
+      await loadTodos();
     } catch (err) {
       alert("Error updating todo: " + err.message);
     }
   };
   
   const deleteTodo = async (id) => {
+    if (!confirm("Delete this todo?")) return;
     try {
-      await fetch(`http://localhost:8080/api/todos/${id}`, {
-        method: 'DELETE'
-      });
-      loadTodos();
+      await fetch(`http://localhost:8080/api/todos/${id}`, { method: 'DELETE' });
+      await loadTodos();
     } catch (err) {
       alert('Error deleting todo: ' + err.message);
     }
@@ -76,6 +76,11 @@ function App() {
 
   if (loading) return <div className="container mt-4">Loading...</div>;
   if (error) return <div className="container mt-4">Error: {error}</div>;
+
+  const sortedTodos = [...todos].sort((a, b) => {
+    if (a.completed === b.completed) return 0;
+    return a.completed ? 1 : -1;
+  });
 
   return (
     <div className="container mt-4">
@@ -97,23 +102,31 @@ function App() {
       </form>
 
       <ul className="list-group">
-        {todos.map((t) => (
+        {sortedTodos.map((t) => (
           <li
             key={t.id}
             className="list-group-item d-flex justify-content-between align-items-center"
           >
-            <div className="form-check">
+            <div className="d-flex align-items-center">
               <input
                 className="form-check-input"
                 checked={t.completed}
                 type="checkbox"
                 onChange={() => toggleCompleted(t)}
+                id={`chk-${t.id}`}
               />
-              <label className="form-check-label ms-2">{t.title}</label>
+              <label 
+                htmlFor={`chk-${t.id}`}
+                className={
+                  "ms-2 mb-0 " + (t.completed ? "text-decoration-line-through text-muted" : "")
+                } 
+                style={{ cursor: "pointer" }}
+              >{t.title}</label>
             </div>
             <button
               className="btn btn-danger btn-sm"
               onClick={() => deleteTodo(t.id)}
+              aria-label={`Delete ${t.title}`}
             >Delete</button>
           </li>
         ))}
